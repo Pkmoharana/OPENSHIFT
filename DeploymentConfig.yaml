@@ -1,0 +1,55 @@
+kind: DeploymentConfig
+apiVersion: v1
+metadata:
+    name: "${MICROSERVICE_NAME}"
+    labels:
+        app: "${MICROSERVICE_NAME}"
+        template: "template-nodejs"
+spec:
+    replicas: 1
+    selector:
+        app: "${MICROSERVICE_NAME}"
+        deploymentconfig: "${MICROSERVICE_NAME}"
+    strategy:
+        type: Rolling
+    template:
+        metadata:
+            name: "${MICROSERVICE_NAME}"
+            labels:
+                app: "${MICROSERVICE_NAME}"
+                deploymentconfig: "${MICROSERVICE_NAME}"
+        spec:
+            containers:
+                - image:
+                  name: "${MICROSERVICE_NAME}"
+                  ports:
+                    - containerPort: 8080
+                      protocol: TCP
+                  livenessProbe:
+                    failureThreshold: 3
+                    httpGet:
+                        path: /api/v1/status
+                        port: 8080
+                        scheme: HTTP
+                    periodSeconds: 10
+                    successThreshold: 1
+                    timeoutSeconds: 1
+                  readinessProbe:
+                    failureThreshold: 3
+                    httpGet:
+                        path: /api/v1/status
+                        port: 8080
+                        scheme: HTTP
+                    periodSeconds: 10
+                    successThreshold: 1
+                    timeoutSeconds: 1
+    triggers:
+      - imageChangeParams:
+            containerNames:
+                - "${MICROSERVICE_NAME}"
+            from:
+                kind: ImageStreamTag
+                name: "${MICROSERVICE_NAME}:dev"
+                namespace: "${NAMESPACE}"
+        type: ImageChange
+      - type: ConfigChange
